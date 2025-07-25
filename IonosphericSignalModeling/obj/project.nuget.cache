@@ -1,0 +1,11 @@
+{
+  "version": 2,
+  "dgSpecHash": "ZH6WxIEur8bjmBzrrJBym/P++5ddzJZBboBZqaELWrwkDc1INgpXfUb/wCarbC+i0K67B01IWS2RtgZ6CA9vBg==",
+  "success": true,
+  "projectFilePath": "D:\\AspProg\\IonosphericSignalModeling\\IonosphericSignalModeling.csproj",
+  "expectedPackageFiles": [
+    "C:\\Users\\wre56\\.nuget\\packages\\oxyplot.core\\2.2.0\\oxyplot.core.2.2.0.nupkg.sha512",
+    "C:\\Users\\wre56\\.nuget\\packages\\oxyplot.windowsforms\\2.2.0\\oxyplot.windowsforms.2.2.0.nupkg.sha512"
+  ],
+  "logs": []
+}

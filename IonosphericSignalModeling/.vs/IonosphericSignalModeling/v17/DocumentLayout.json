@@ -1,0 +1,87 @@
+{
+  "Version": 1,
+  "WorkspaceRootPath": "D:\\AspProg\\IonosphericSignalModeling\\",
+  "Documents": [
+    {
+      "AbsoluteMoniker": "D:0:0:{B4AE1458-E81A-4F15-899A-2878DE05D246}|IonosphericSignalModeling.csproj|d:\\aspprog\\ionosphericsignalmodeling\\videosignalmodeling\\_adaptivefilter\\adaptivefilter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B4AE1458-E81A-4F15-899A-2878DE05D246}|IonosphericSignalModeling.csproj|solutionrelative:videosignalmodeling\\_adaptivefilter\\adaptivefilter.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B4AE1458-E81A-4F15-899A-2878DE05D246}|IonosphericSignalModeling.csproj|d:\\aspprog\\ionosphericsignalmodeling\\mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form",
+      "RelativeMoniker": "D:0:0:{B4AE1458-E81A-4F15-899A-2878DE05D246}|IonosphericSignalModeling.csproj|solutionrelative:mainform.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}|Form"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B4AE1458-E81A-4F15-899A-2878DE05D246}|IonosphericSignalModeling.csproj|d:\\aspprog\\ionosphericsignalmodeling\\videosignalmodeling\\_impulseresponse\\impulseresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B4AE1458-E81A-4F15-899A-2878DE05D246}|IonosphericSignalModeling.csproj|solutionrelative:videosignalmodeling\\_impulseresponse\\impulseresponse.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    },
+    {
+      "AbsoluteMoniker": "D:0:0:{B4AE1458-E81A-4F15-899A-2878DE05D246}|IonosphericSignalModeling.csproj|D:\\AspProg\\IonosphericSignalModeling\\videosignalmodeling\\_convolution\\convolution.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}",
+      "RelativeMoniker": "D:0:0:{B4AE1458-E81A-4F15-899A-2878DE05D246}|IonosphericSignalModeling.csproj|solutionrelative:videosignalmodeling\\_convolution\\convolution.cs||{A6C744A8-0E4A-4FC6-886A-064283054674}"
+    }
+  ],
+  "DocumentGroupContainers": [
+    {
+      "Orientation": 0,
+      "VerticalTabListWidth": 256,
+      "DocumentGroups": [
+        {
+          "DockedWidth": 304,
+          "SelectedChildIndex": 1,
+          "Children": [
+            {
+              "$type": "Document",
+              "DocumentIndex": 1,
+              "Title": "MainForm.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435]",
+              "DocumentMoniker": "D:\\AspProg\\IonosphericSignalModeling\\MainForm.cs",
+              "RelativeDocumentMoniker": "MainForm.cs",
+              "ToolTip": "D:\\AspProg\\IonosphericSignalModeling\\MainForm.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435]",
+              "RelativeToolTip": "MainForm.cs [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435]",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-11T11:14:55.928Z",
+              "EditorCaption": " [\u041A\u043E\u043D\u0441\u0442\u0440\u0443\u0438\u0440\u043E\u0432\u0430\u043D\u0438\u0435]"
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 0,
+              "Title": "AdaptiveFilter.cs",
+              "DocumentMoniker": "D:\\AspProg\\IonosphericSignalModeling\\VideoSignalModeling\\_AdaptiveFilter\\AdaptiveFilter.cs",
+              "RelativeDocumentMoniker": "VideoSignalModeling\\_AdaptiveFilter\\AdaptiveFilter.cs",
+              "ToolTip": "D:\\AspProg\\IonosphericSignalModeling\\VideoSignalModeling\\_AdaptiveFilter\\AdaptiveFilter.cs",
+              "RelativeToolTip": "VideoSignalModeling\\_AdaptiveFilter\\AdaptiveFilter.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAsAAAAwAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-11T11:12:56.181Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 2,
+              "Title": "ImpulseResponse.cs",
+              "DocumentMoniker": "D:\\AspProg\\IonosphericSignalModeling\\VideoSignalModeling\\_ImpulseResponse\\ImpulseResponse.cs",
+              "RelativeDocumentMoniker": "VideoSignalModeling\\_ImpulseResponse\\ImpulseResponse.cs",
+              "ToolTip": "D:\\AspProg\\IonosphericSignalModeling\\VideoSignalModeling\\_ImpulseResponse\\ImpulseResponse.cs",
+              "RelativeToolTip": "VideoSignalModeling\\_ImpulseResponse\\ImpulseResponse.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAcAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-02-26T13:09:47.641Z",
+              "EditorCaption": ""
+            },
+            {
+              "$type": "Document",
+              "DocumentIndex": 3,
+              "Title": "Convolution.cs",
+              "DocumentMoniker": "D:\\AspProg\\IonosphericSignalModeling\\VideoSignalModeling\\_Convolution\\Convolution.cs",
+              "RelativeDocumentMoniker": "VideoSignalModeling\\_Convolution\\Convolution.cs",
+              "ToolTip": "D:\\AspProg\\IonosphericSignalModeling\\VideoSignalModeling\\_Convolution\\Convolution.cs",
+              "RelativeToolTip": "VideoSignalModeling\\_Convolution\\Convolution.cs",
+              "ViewState": "AQIAAAAAAAAAAAAAAAAAAAAAAAAAAAAA",
+              "Icon": "ae27a6b0-e345-4288-96df-5eaf394ee369.000738|",
+              "WhenOpened": "2025-03-06T10:27:51.905Z",
+              "EditorCaption": ""
+            }
+          ]
+        }
+      ]
+    }
+  ]
+}

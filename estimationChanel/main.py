@@ -14,10 +14,9 @@ warnings.filterwarnings('ignore')
 # ============================================================================
 # НАСТРОЙКИ ЭКСПЕРИМЕНТА
 # ============================================================================
-np.random.seed(42)
 
 target_SNR_linear = np.array([0.1, 0.5, 1, 2, 3, 5, 6, 7, 8, 9, 10])
-N_MONTE_CARLO = 3  # Увеличьте для лучшей статистики
+N_MONTE_CARLO = 1000  # Увеличьте для лучшей статистики
 
 RESULTS_DIR = "estimation_results"
 os.makedirs(RESULTS_DIR, exist_ok=True)

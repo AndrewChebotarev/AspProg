@@ -16,7 +16,7 @@ warnings.filterwarnings('ignore')
 # ============================================================================
 
 target_SNR_linear = np.array([0.1, 0.5, 1, 2, 3, 5, 6, 7, 8, 9, 10])
-N_MONTE_CARLO = 1000  # Увеличьте для лучшей статистики
+N_MONTE_CARLO = 10  # Увеличьте для лучшей статистики
 
 RESULTS_DIR = "estimation_results"
 os.makedirs(RESULTS_DIR, exist_ok=True)
@@ -103,15 +103,21 @@ def save_checkpoint(results, checkpoint_file):
         print(f"\n   ⚠️ Не удалось сохранить чекпоинт: {e}")
 
 
-def calculate_crb(snr_linear, tau_true, A_true, omegas, a_m, Fs, T1, T2):
-    freqs = omegas / (2 * np.pi)
-    mean_f = np.mean(freqs)
-    f_rms_sq = np.mean((freqs - mean_f) ** 2)
+def calculate_crb(snr_linear, tau_true, A_true, psi_true, omegas, a_m, T1, T2, Fs, N0):
     T_len = T2 - T1
-    crb_tau_single = 1 / (2 * snr_linear * (2 * np.pi) ** 2 * f_rms_sq * T_len)
-    crb_tau = crb_tau_single * np.ones(len(tau_true))
-    crb_A = 1 / (2 * snr_linear) * np.ones(len(A_true))
-    crb_psi = 1 / (2 * snr_linear) * np.ones(len(psi_true))
+    N = len(tau_true)
+    # --- CRB(τ) не трогаем ---
+    freqs = omegas / (2*np.pi)
+    mean_f = np.mean(freqs)
+    f_rms_sq = np.mean((freqs - mean_f)**2)
+    crb_tau_sec = 1 / (2 * snr_linear * (2*np.pi)**2 * f_rms_sq * T_len)
+    crb_tau_us = crb_tau_sec * 1e6
+    crb_tau = np.ones(N) * crb_tau_us  # как было
+    # --- CRB(A), CRB(ψ): через N0 и энергию формы ---
+    sum_am2 = np.sum(a_m**2)
+    E_u = 0.5 * T_len * sum_am2   # ≈ ∫ u^2 dt
+    crb_A = np.ones(N) * (N0 / (2 * E_u))        # = N0 / (T*sum_am2)
+    crb_psi = (N0 / (2 * (A_true**2) * E_u))       # = N0 / (A^2*T*sum_am2)
     return crb_tau, crb_A, crb_psi
 
 
@@ -120,71 +126,91 @@ def get_N0_for_SNR(target_snr_linear, signal_power_ref, Fs):
 
 
 # ============================================================================
-# ФУНКЦИИ ВИЗУАЛИЗАЦИИ (сокращены для краткости)
+# СТРАНИЦА 1: ЛОГАРИФМИЧЕСКИЙ МАСШТАБ (loglog)
 # ============================================================================
-def plot_all_results(results, crb_tau_values, crb_A_values, crb_psi_values, N_true):
-    """Построение всех графиков"""
+def plot_logarithmic_scale(results, crb_tau_values, crb_A_values, crb_psi_values, N_true):
+    """Построение графиков в логарифмическом масштабе"""
     snr_db = np.array(results['SNR_dB'])
 
-    # Создаём фигуру с 6 подграфиками
     fig, axes = plt.subplots(2, 3, figsize=(16, 10))
-    fig.suptitle('Анализ точности МП-оценок параметров многолучевого канала', fontsize=14, fontweight='bold')
+    fig.suptitle('Анализ точности МП-оценок (ЛОГАРИФМИЧЕСКИЙ МАСШТАБ)',
+                 fontsize=14, fontweight='bold')
 
-    # 1. Вероятность правильного определения числа лучей
+    # 1. Вероятность правильного определения числа лучей (линейный масштаб)
     ax = axes[0, 0]
     p_correct = [np.mean(np.array(dist) == N_true) for dist in results['N_est_distribution']]
-    ax.plot(snr_db, p_correct, 'b-o', linewidth=2, markersize=8)
-    ax.fill_between(snr_db, 0, p_correct, alpha=0.3)
+    ax.semilogy(snr_db, p_correct, 'b-o', linewidth=2, markersize=8)
+    ax.fill_between(snr_db, 0.001, p_correct, alpha=0.3)
     ax.set_xlabel('SNR, дБ')
     ax.set_ylabel('P(N̂ = N_true)')
     ax.set_title('Вероятность правильного определения\nчисла лучей')
     ax.grid(True, alpha=0.3)
-    ax.set_ylim([0, 1.05])
+    ax.set_ylim([0.001, 1.05])
 
-    # 2. MSE задержек
+    # 2. MSE задержек (логарифмический масштаб)
     ax = axes[0, 1]
     valid = [not np.isnan(x) and x > 0 for x in results['tau_mse']]
     if any(valid):
         valid_snr = snr_db[valid]
         valid_mse = np.array(results['tau_mse'])[valid]
-        valid_crb = np.array(crb_tau_values)[valid] / 1e6
-        ax.loglog(valid_snr, valid_mse, 'r-s', linewidth=2, markersize=8, label='MSE(τ)')
-        ax.loglog(valid_snr, valid_crb, 'k--', linewidth=2, label='CRB(τ)')
-    ax.set_xlabel('SNR, дБ')
-    ax.set_ylabel('MSE(τ), мкс²')
-    ax.set_title('Ошибка оценки задержек лучей')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+        valid_crb = np.array(crb_tau_values)[valid]
 
-    # 3. MSE амплитуд
+        # Логарифмический масштаб по обеим осям
+        ax.loglog(valid_snr, valid_mse, 'ro-', linewidth=2, markersize=8,
+                  label='MSE(τ) эксперимент', markerfacecolor='white', markeredgewidth=2)
+        ax.loglog(valid_snr, valid_crb, 'b--', linewidth=2.5,
+                  label='CRB(τ) теория', alpha=0.8)
+
+        # Линия теоретического наклона -1
+        if len(valid_snr) > 1:
+            ref_snr = np.linspace(valid_snr[0], valid_snr[-1], 10)
+            crb_ref = valid_crb[0] * (valid_snr[0] / ref_snr)
+            ax.loglog(ref_snr, crb_ref, ':', color='gray', linewidth=1.5, alpha=0.7,
+                      label='Наклон -1 (теория)')
+
+    ax.set_xlabel('SNR, дБ', fontsize=11)
+    ax.set_ylabel('MSE(τ), мкс²', fontsize=11)
+    ax.set_title('Ошибка оценки задержек лучей\n(лог-лог масштаб)', fontsize=10)
+    ax.grid(True, alpha=0.3, which='both')
+    ax.legend(loc='upper right', fontsize=8)
+
+    # 3. MSE амплитуд (логарифмический)
     ax = axes[0, 2]
     valid = [not np.isnan(x) and x > 0 for x in results['A_mse']]
     if any(valid):
         valid_snr = snr_db[valid]
         valid_mse = np.array(results['A_mse'])[valid]
         valid_crb = np.array(crb_A_values)[valid]
-        ax.loglog(valid_snr, valid_mse, 'g-d', linewidth=2, markersize=8, label='MSE(A)')
-        ax.loglog(valid_snr, valid_crb, 'k--', linewidth=2, label='CRB(A)')
-    ax.set_xlabel('SNR, дБ')
-    ax.set_ylabel('MSE(A)')
-    ax.set_title('Ошибка оценки амплитуд лучей')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
 
-    # 4. MSE фаз
+        ax.loglog(valid_snr, valid_mse, 'gd-', linewidth=2, markersize=8,
+                  label='MSE(A) эксперимент', markerfacecolor='white', markeredgewidth=2)
+        ax.loglog(valid_snr, valid_crb, 'b--', linewidth=2.5,
+                  label='CRB(A) теория', alpha=0.8)
+
+    ax.set_xlabel('SNR, дБ', fontsize=11)
+    ax.set_ylabel('MSE(A)', fontsize=11)
+    ax.set_title('Ошибка оценки амплитуд лучей\n(лог-лог масштаб)', fontsize=10)
+    ax.grid(True, alpha=0.3, which='both')
+    ax.legend(loc='upper right', fontsize=8)
+
+    # 4. MSE фаз (логарифмический)
     ax = axes[1, 0]
     valid = [not np.isnan(x) and x > 0 for x in results['psi_mse']]
     if any(valid):
         valid_snr = snr_db[valid]
         valid_mse = np.array(results['psi_mse'])[valid]
         valid_crb = np.array(crb_psi_values)[valid]
-        ax.loglog(valid_snr, valid_mse, 'm-o', linewidth=2, markersize=8, label='MSE(ψ)')
-        ax.loglog(valid_snr, valid_crb, 'k--', linewidth=2, label='CRB(ψ)')
-    ax.set_xlabel('SNR, дБ')
-    ax.set_ylabel('MSE(ψ), рад²')
-    ax.set_title('Ошибка оценки фаз лучей')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+
+        ax.loglog(valid_snr, valid_mse, 'md-', linewidth=2, markersize=8,
+                  label='MSE(ψ) эксперимент', markerfacecolor='white', markeredgewidth=2)
+        ax.loglog(valid_snr, valid_crb, 'b--', linewidth=2.5,
+                  label='CRB(ψ) теория', alpha=0.8)
+
+    ax.set_xlabel('SNR, дБ', fontsize=11)
+    ax.set_ylabel('MSE(ψ), рад²', fontsize=11)
+    ax.set_title('Ошибка оценки фаз лучей\n(лог-лог масштаб)', fontsize=10)
+    ax.grid(True, alpha=0.3, which='both')
+    ax.legend(loc='upper right', fontsize=8)
 
     # 5. Относительная эффективность
     ax = axes[1, 1]
@@ -192,16 +218,19 @@ def plot_all_results(results, crb_tau_values, crb_A_values, crb_psi_values, N_tr
     if any(valid):
         valid_snr = snr_db[valid]
         valid_mse = np.array(results['tau_mse'])[valid]
-        valid_crb = np.array(crb_tau_values)[valid] / 1e6
+        valid_crb = np.array(crb_tau_values)[valid]
         ratio = valid_mse / valid_crb
-        ax.semilogy(valid_snr, ratio, 'purple', linewidth=2, marker='o')
-        ax.axhline(1, color='r', linestyle='--', label='CRB')
-        ax.axhline(10, color='gray', linestyle=':', alpha=0.5)
-    ax.set_xlabel('SNR, дБ')
-    ax.set_ylabel('MSE / CRB')
-    ax.set_title('Относительная эффективность оценки\n(1 = оптимальная оценка)')
-    ax.legend()
-    ax.grid(True, alpha=0.3)
+
+        ax.semilogy(valid_snr, ratio, 'purple', linewidth=2, marker='o', markersize=8)
+        ax.axhline(1, color='r', linestyle='--', linewidth=2, label='CRB')
+        ax.axhline(10, color='gray', linestyle=':', alpha=0.5, label='Порог ×10')
+        ax.set_ylim([0.5, 100])
+
+    ax.set_xlabel('SNR, дБ', fontsize=11)
+    ax.set_ylabel('MSE / CRB', fontsize=11)
+    ax.set_title('Относительная эффективность оценки\n(лог по Y)', fontsize=10)
+    ax.grid(True, alpha=0.3, which='both')
+    ax.legend(loc='upper right', fontsize=8)
 
     # 6. Гистограмма распределения N̂
     ax = axes[1, 2]
@@ -216,9 +245,145 @@ def plot_all_results(results, crb_tau_values, crb_A_values, crb_psi_values, N_tr
     ax.grid(True, alpha=0.3, axis='y')
 
     plt.tight_layout()
-    plt.savefig(os.path.join(RESULTS_DIR, 'estimation_analysis.png'), dpi=300, bbox_inches='tight')
+    plt.savefig('estimation_analysis_logscale.png', dpi=300, bbox_inches='tight')
     plt.show()
-    print(f"   ✅ Графики сохранены")
+    print("   ✅ Графики (лог. масштаб) сохранены как 'estimation_analysis_logscale.png'")
+
+
+# ============================================================================
+# СТРАНИЦА 2: ЛИНЕЙНЫЙ МАСШТАБ (обычный)
+# ============================================================================
+def plot_linear_scale(results, crb_tau_values, crb_A_values, crb_psi_values, N_true):
+    """Построение графиков в линейном масштабе"""
+    snr_db = np.array(results['SNR_dB'])
+
+    fig, axes = plt.subplots(2, 3, figsize=(16, 10))
+    fig.suptitle('Анализ точности МП-оценок (ЛИНЕЙНЫЙ МАСШТАБ)',
+                 fontsize=14, fontweight='bold')
+
+    # 1. Вероятность правильного определения числа лучей
+    ax = axes[0, 0]
+    p_correct = [np.mean(np.array(dist) == N_true) for dist in results['N_est_distribution']]
+    ax.plot(snr_db, p_correct, 'b-o', linewidth=2, markersize=8)
+    ax.fill_between(snr_db, 0, p_correct, alpha=0.3)
+    ax.set_xlabel('SNR, дБ')
+    ax.set_ylabel('P(N̂ = N_true)')
+    ax.set_title('Вероятность правильного определения\nчисла лучей')
+    ax.grid(True, alpha=0.3)
+    ax.set_ylim([0, 1.05])
+
+    # 2. MSE задержек (линейный масштаб)
+    ax = axes[0, 1]
+    valid = [not np.isnan(x) and x > 0 for x in results['tau_mse']]
+    if any(valid):
+        valid_snr = snr_db[valid]
+        valid_mse = np.array(results['tau_mse'])[valid]
+        valid_crb = np.array(crb_tau_values)[valid]
+
+        # Линейный масштаб
+        ax.plot(valid_snr, valid_mse, 'ro-', linewidth=2, markersize=8,
+                label='MSE(τ) эксперимент', markerfacecolor='white', markeredgewidth=2)
+        ax.plot(valid_snr, valid_crb, 'b--', linewidth=2.5,
+                label='CRB(τ) теория', alpha=0.8)
+
+    ax.set_xlabel('SNR, дБ', fontsize=11)
+    ax.set_ylabel('MSE(τ), мкс²', fontsize=11)
+    ax.set_title('Ошибка оценки задержек лучей\n(линейный масштаб)', fontsize=10)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right', fontsize=8)
+
+    # 3. MSE амплитуд (линейный)
+    ax = axes[0, 2]
+    valid = [not np.isnan(x) and x > 0 for x in results['A_mse']]
+    if any(valid):
+        valid_snr = snr_db[valid]
+        valid_mse = np.array(results['A_mse'])[valid]
+        valid_crb = np.array(crb_A_values)[valid]
+
+        ax.plot(valid_snr, valid_mse, 'gd-', linewidth=2, markersize=8,
+                label='MSE(A) эксперимент', markerfacecolor='white', markeredgewidth=2)
+        ax.plot(valid_snr, valid_crb, 'b--', linewidth=2.5,
+                label='CRB(A) теория', alpha=0.8)
+
+    ax.set_xlabel('SNR, дБ', fontsize=11)
+    ax.set_ylabel('MSE(A)', fontsize=11)
+    ax.set_title('Ошибка оценки амплитуд лучей\n(линейный масштаб)', fontsize=10)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right', fontsize=8)
+
+    # 4. MSE фаз (линейный)
+    ax = axes[1, 0]
+    valid = [not np.isnan(x) and x > 0 for x in results['psi_mse']]
+    if any(valid):
+        valid_snr = snr_db[valid]
+        valid_mse = np.array(results['psi_mse'])[valid]
+        valid_crb = np.array(crb_psi_values)[valid]
+
+        ax.plot(valid_snr, valid_mse, 'md-', linewidth=2, markersize=8,
+                label='MSE(ψ) эксперимент', markerfacecolor='white', markeredgewidth=2)
+        ax.plot(valid_snr, valid_crb, 'b--', linewidth=2.5,
+                label='CRB(ψ) теория', alpha=0.8)
+
+    ax.set_xlabel('SNR, дБ', fontsize=11)
+    ax.set_ylabel('MSE(ψ), рад²', fontsize=11)
+    ax.set_title('Ошибка оценки фаз лучей\n(линейный масштаб)', fontsize=10)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right', fontsize=8)
+
+    # 5. Относительная эффективность (линейный по X, лог по Y)
+    ax = axes[1, 1]
+    valid = [not np.isnan(x) and x > 0 for x in results['tau_mse']]
+    if any(valid):
+        valid_snr = snr_db[valid]
+        valid_mse = np.array(results['tau_mse'])[valid]
+        valid_crb = np.array(crb_tau_values)[valid]
+        ratio = valid_mse / valid_crb
+
+        ax.semilogy(valid_snr, ratio, 'purple', linewidth=2, marker='o', markersize=8)
+        ax.axhline(1, color='r', linestyle='--', linewidth=2, label='CRB')
+        ax.axhline(10, color='gray', linestyle=':', alpha=0.5, label='Порог ×10')
+        ax.set_ylim([0.5, 100])
+
+    ax.set_xlabel('SNR, дБ', fontsize=11)
+    ax.set_ylabel('MSE / CRB', fontsize=11)
+    ax.set_title('Относительная эффективность оценки\n(лог по Y)', fontsize=10)
+    ax.grid(True, alpha=0.3)
+    ax.legend(loc='upper right', fontsize=8)
+
+    # 6. Гистограмма распределения N̂
+    ax = axes[1, 2]
+    mid_idx = len(snr_db) // 2
+    N_est_mid = results['N_est_distribution'][mid_idx]
+    unique_n, counts = np.unique(N_est_mid, return_counts=True)
+    ax.bar(unique_n, counts / len(N_est_mid) * 100, color='steelblue', edgecolor='black')
+    ax.set_xlabel('Оценка числа лучей N̂')
+    ax.set_ylabel('Частота, %')
+    ax.set_title(f'Распределение N̂ при SNR = {snr_db[mid_idx]:.1f} дБ')
+    ax.set_xticks(unique_n)
+    ax.grid(True, alpha=0.3, axis='y')
+
+    plt.tight_layout()
+    plt.savefig('estimation_analysis_linear.png', dpi=300, bbox_inches='tight')
+    plt.show()
+    print("   ✅ Графики (лин. масштаб) сохранены как 'estimation_analysis_linear.png'")
+
+# ============================================================================
+# ФУНКЦИИ ВИЗУАЛИЗАЦИИ (сокращены для краткости)
+# ============================================================================
+def plot_all_results(results, crb_tau_values, crb_A_values, crb_psi_values, N_true):
+    """
+    Построение всех трёх вариантов графиков:
+    1. Логарифмический масштаб
+    2. Линейный масштаб
+    3. Сравнение масштабов
+    """
+    print("\n🎨 Построение графиков...")
+
+    # Страница 1: Логарифмический масштаб
+    plot_logarithmic_scale(results, crb_tau_values, crb_A_values, crb_psi_values, N_true)
+
+    # Страница 2: Линейный масштаб
+    plot_linear_scale(results, crb_tau_values, crb_A_values, crb_psi_values, N_true)
 
 
 # ============================================================================
@@ -371,11 +536,52 @@ def main():
     crb_A_values = []
     crb_psi_values = []
 
-    for snr_lin in results['SNR_linear']:
-        crb_tau, crb_A, crb_psi = calculate_crb(snr_lin, tau_true, A_true, omegas, a_m, Fs, T1, T2)
-        crb_tau_values.append(np.mean(crb_tau) * 1e12)
+    for i, snr_lin in enumerate(results['SNR_linear']):
+        N0 = results['N0_actual'][i]
+        crb_tau, crb_A, crb_psi = calculate_crb(
+            snr_lin, tau_true, A_true, psi_true, omegas, a_m, T1, T2, Fs, N0
+        )
+        crb_tau_values.append(np.mean(crb_tau))
         crb_A_values.append(np.mean(crb_A))
         crb_psi_values.append(np.mean(crb_psi))
+
+        print(f"  SNR={snr_lin:.2f}: CRB(τ)={np.mean(crb_tau):.3e} мкс, "
+              f"CRB(A)={np.mean(crb_A):.3e}, "
+              f"CRB(ψ)={np.mean(crb_psi):.3e} рад")
+
+    # После расчёта CRB, добавьте сравнение для всех параметров
+    # После расчёта CRB, добавьте подробное сравнение
+    print("\n🔍 СРАВНЕНИЕ RMSE И CRB:")
+    print("=" * 80)
+    print(f"{'SNR, дБ':<10} {'Параметр':<12} {'RMSE эксп.':<15} {'√CRB':<15} {'Отношение':<10}")
+    print("-" * 80)
+
+    for i in range(len(results['SNR_dB'])):
+        snr_db_val = results['SNR_dB'][i]
+
+        # Задержки
+        if not np.isnan(results['tau_mse'][i]) and results['tau_mse'][i] > 0:
+            rmse_tau = np.sqrt(results['tau_mse'][i])
+            crb_tau_val = crb_tau_values[i]
+            ratio_tau = rmse_tau / crb_tau_val if crb_tau_val > 0 else np.nan
+            print(f"{snr_db_val:<10.1f} {'τ (мкс)':<12} {rmse_tau:<15.3f} {crb_tau_val:<15.3f} {ratio_tau:<10.2f}")
+
+        # Амплитуды
+        if not np.isnan(results['A_mse'][i]) and results['A_mse'][i] > 0:
+            rmse_A = np.sqrt(results['A_mse'][i])
+            crb_A_val = crb_A_values[i]
+            sqrt_crb_A = np.sqrt(crb_A_val)  # Важно: берём корень!
+            ratio_A = rmse_A / sqrt_crb_A if sqrt_crb_A > 0 else np.nan
+            print(f"{snr_db_val:<10.1f} {'A':<12} {rmse_A:<15.4f} {sqrt_crb_A:<15.4f} {ratio_A:<10.2f}")
+
+        # Фазы
+        if not np.isnan(results['psi_mse'][i]) and results['psi_mse'][i] > 0:
+            rmse_psi = np.sqrt(results['psi_mse'][i])
+            crb_psi_val = crb_psi_values[i]
+            sqrt_crb_psi = np.sqrt(crb_psi_val)  # Важно: берём корень!
+            ratio_psi = rmse_psi / sqrt_crb_psi if sqrt_crb_psi > 0 else np.nan
+            print(f"{snr_db_val:<10.1f} {'ψ (рад)':<12} {rmse_psi:<15.4f} {sqrt_crb_psi:<15.4f} {ratio_psi:<10.2f}")
+            print("-" * 80)
 
     # Визуализация
     print("\n🎨 Построение графиков...")

@@ -104,20 +104,48 @@ def save_checkpoint(results, checkpoint_file):
 
 
 def calculate_crb(snr_linear, tau_true, A_true, psi_true, omegas, a_m, T1, T2, Fs, N0):
-    T_len = T2 - T1
+    """
+    Расчет границы Крамера-Рао для параметров канала
+
+    ВАЖНО: Все CRB возвращаются в тех же единицах, что и MSE эксперимента:
+    - τ: в микросекундах в квадрате (мкс²)
+    - A: безразмерная (амплитуда)
+    - ψ: в радианах в квадрате (рад²)
+    """
+    T_len = T2 - T1  # Длительность наблюдения в секундах
     N = len(tau_true)
-    # --- CRB(τ) не трогаем ---
-    freqs = omegas / (2*np.pi)
+
+    # --- CRB для задержек τ ---
+    # Формула: CRB(τ) = 1 / (2 * SNR * (2π)² * f_rms² * T_len)
+    # где f_rms² = средний квадрат частоты относительно среднего значения
+
+    freqs = omegas / (2 * np.pi)  # Частоты в Гц
     mean_f = np.mean(freqs)
-    f_rms_sq = np.mean((freqs - mean_f)**2)
-    crb_tau_sec = 1 / (2 * snr_linear * (2*np.pi)**2 * f_rms_sq * T_len)
-    crb_tau_us = crb_tau_sec * 1e6
-    crb_tau = np.ones(N) * crb_tau_us  # как было
-    # --- CRB(A), CRB(ψ): через N0 и энергию формы ---
-    sum_am2 = np.sum(a_m**2)
-    E_u = 0.5 * T_len * sum_am2   # ≈ ∫ u^2 dt
-    crb_A = np.ones(N) * (N0 / (2 * E_u))        # = N0 / (T*sum_am2)
-    crb_psi = (N0 / (2 * (A_true**2) * E_u))       # = N0 / (A^2*T*sum_am2)
+    f_rms_sq = np.mean((freqs - mean_f) ** 2)  # [Гц²]
+
+    # CRB в секундах в квадрате
+    crb_tau_sec_sq = 1 / (2 * snr_linear * (2 * np.pi) ** 2 * f_rms_sq * T_len)
+
+    # Конвертация в микросекунды в квадрате (1 с² = 1e9 мкс²)
+    crb_tau_us_sq = crb_tau_sec_sq * 1e12
+
+    # Для N лучей CRB одинаков для каждого (ортогональные сигналы)
+    crb_tau = np.ones(N) * crb_tau_us_sq
+
+    # --- CRB для амплитуд A ---
+    # Энергия сигнальной формы: E_u = (T_len/2) * Σ a_m²
+    sum_am2 = np.sum(a_m ** 2)
+    E_u = 0.5 * T_len * sum_am2
+
+    # CRB для амплитуды (безразмерная)
+    crb_A = np.ones(N) * (N0 / (2 * E_u))
+
+    # --- CRB для фаз ψ ---
+    # CRB для фазы зависит от амплитуды луча
+    crb_psi = np.zeros(N)
+    for k in range(N):
+        crb_psi[k] = N0 / (2 * (A_true[k] ** 2) * E_u)
+
     return crb_tau, crb_A, crb_psi
 
 
@@ -408,7 +436,7 @@ def main():
     }
 
     # Параметры для отбрасывания выбросов
-    max_tau_error_us = 200  # Максимальная разумная ошибка задержки (мкс)
+    max_tau_error_us = 1e9  # Максимальная разумная ошибка задержки (мкс)
     tau_spacing_us = np.diff(tau_true)[0] * 1e6  # 400 мкс
 
     for snr_idx, target_snr_lin in enumerate(target_SNR_linear):
@@ -527,7 +555,9 @@ def main():
 
     tracker.finish_experiment()
 
-    # Расчёт CRB
+    # ===================================================================
+    # РАСЧЁТ ГРАНИЦЫ КРАМЕРА-РАО
+    # ===================================================================
     print("\n" + "=" * 80)
     print("📐 РАСЧЁТ ГРАНИЦЫ КРАМЕРА-РАО")
     print("=" * 80)
@@ -545,9 +575,25 @@ def main():
         crb_A_values.append(np.mean(crb_A))
         crb_psi_values.append(np.mean(crb_psi))
 
-        print(f"  SNR={snr_lin:.2f}: CRB(τ)={np.mean(crb_tau):.3e} мкс, "
+        print(f"  SNR={snr_lin:.2f}: CRB(τ)={np.mean(crb_tau):.3e} мкс², "
               f"CRB(A)={np.mean(crb_A):.3e}, "
-              f"CRB(ψ)={np.mean(crb_psi):.3e} рад")
+              f"CRB(ψ)={np.mean(crb_psi):.3e} рад²")
+
+    # ===================================================================
+    # 🔍 ПРОВЕРКА РАЗМЕРНОСТИ CRB (ДОБАВИТЬ ЭТОТ БЛОК)
+    # ===================================================================
+    print("\n" + "=" * 80)
+    print("🔍 ПРОВЕРКА РАЗМЕРНОСТИ CRB:")
+    print("=" * 80)
+
+    for i, snr_lin in enumerate(results['SNR_linear']):
+        if not np.isnan(results['tau_mse'][i]) and results['tau_mse'][i] > 0:
+            print(f"SNR={snr_lin:.2f} ({results['SNR_dB'][i]:.1f} дБ):")
+            print(f"  MSE(τ) эксперимент: {results['tau_mse'][i]:.3e} мкс²")
+            print(f"  CRB(τ) теория:      {crb_tau_values[i]:.3e} мкс²")
+            print(f"  Отношение MSE/CRB:   {results['tau_mse'][i] / crb_tau_values[i]:.2f}")
+            print(f"  √MSE / √CRB:        {np.sqrt(results['tau_mse'][i]) / np.sqrt(crb_tau_values[i]):.2f}")
+            print()
 
     # После расчёта CRB, добавьте сравнение для всех параметров
     # После расчёта CRB, добавьте подробное сравнение

@@ -1,0 +1,5 @@
+Traceback (most recent call last):
+  File "<string>", line 1, in <module>
+    import numpy as np; from CreateDataForEstimation import generate_test_signal_and_channel_response; from MonteCarlo2 import compute_sufficient_statistics; M=2; a_m=np.array([1.0,1.0]); omega_m=2*np.pi*np.array([900,1100]); phi_m=np.array([0,0]); N_true=2; A_true=np.array([0.7,0.5]); tau_true=np.array([600e-6,1200e-6]); psi_true=np.array([0.52,-0.53]); fs=20000; T1=0.0; T2=0.1; N0=100.0; data=generate_test_signal_and_channel_response(M,a_m,omega_m,phi_m,N_true,A_true,tau_true,psi_true,fs,T1,T2,40); print('data ok'); Z_prime,x_m,y_m=compute_sufficient_statistics(data['xi_observed'],data['t'],omega_m,a_m,N0,fs); print('stats ok'); print('Z_prime:', Z_prime)
+                                                                                                       ^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+ImportError: cannot import name 'compute_sufficient_statistics' from 'MonteCarlo2' (c:\MyFiles\Postgrad\AspProg\estimationChanel2\MonteCarlo2.py)

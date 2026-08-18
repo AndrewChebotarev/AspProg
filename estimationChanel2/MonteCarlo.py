@@ -590,7 +590,7 @@ if __name__ == "__main__":
     print("РЕЗУЛЬТАТЫ")
     print("=" * 80)
 
-    print(f"\n{'SNR (дБ)':>10} | {'τ RMSE (мкс)':>15} | {'A RMSE (%)':>15} | {'ψ RMSE (рад)':>15}")
+    print(f"\n{'SNR(dB)':>10} | {'tau RMSE(mks)':>15} | {'A RMSE(%)':>15} | {'psi RMSE(rad)':>15}")
     print("-" * 65)
     for idx, SNR_dB in enumerate(SNR_dB_list):
         print(f"{SNR_dB:10.0f} | {tau_rmse_us[idx]:15.4f} | {A_rmse_percent[idx]:15.4f} | {psi_rmse_rad[idx]:15.4f}")
@@ -599,7 +599,7 @@ if __name__ == "__main__":
     print("ГРАНИЦА КРАМЕРА-РАО (CRB)")
     print("=" * 80)
 
-    print(f"\n{'SNR (дБ)':>10} | {'CRB τ (мкс)':>18} | {'CRB A (%)':>15} | {'CRB ψ (рад)':>15}")
+    print(f"\n{'SNR(dB)':>10} | {'CRB tau(mks)':>18} | {'CRB A(%)':>15} | {'CRB psi(rad)':>15}")
     print("-" * 65)
     for idx, SNR_dB in enumerate(SNR_dB_list):
         print(f"{SNR_dB:10.0f} | {crb_tau_us[idx]:18.6f} | {crb_A_percent[idx]:15.6f} | {crb_psi_rad[idx]:15.6f}")

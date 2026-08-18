@@ -1,0 +1,6 @@
+data ok
+stats ok
+C,S ok
+H ok
+Q ok
+L=0.000002

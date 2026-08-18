@@ -1,0 +1,4 @@
+  File "<string>", line 1
+    import numpy as np; from CreateDataForEstimation import generate_test_signal_and_channel_response; M=2; a_m=np.array([1.0,1.0]); omega_m=2*np.pi*np.array([900,1100]); phi_m=np.array([0,0]); N_true=2; A_true=np.array([0.7,0.5]); tau_true=np.array([600e-6,1200e-6]); psi_true=np.array([0.52,-0.53]); fs=20000; T1=0.0; T2=1.0; for snr in [40,30,20,10,0,-10,-20,-30]: data=generate_test_signal_and_channel_response(M,a_m,omega_m,phi_m,N_true,A_true,tau_true,psi_true,fs,T1,T2,snr); print(f'SNR={snr}: len={len(data["t"])}')
+                                                                                                                                                                                                                                                                                                                                        ^^^
+SyntaxError: invalid syntax
